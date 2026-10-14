@@ -19,10 +19,19 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IChunkRepository, ChunkRepository>();
 
-        services.AddDbContext<FileForgeDbContext>(options =>
-            options.UseNpgsql(connectionString, npgsql => npgsql.UseVector()));
+        services.AddDbContext<FileForgeDbContext>(options => ConfigureDatabase(options, connectionString));
 
 
         return services;
+    }
+
+
+    public static void ConfigureDatabase(
+        DbContextOptionsBuilder options,
+        string connectionString)
+    {
+        options.UseNpgsql(
+            connectionString,
+            npgsql => npgsql.UseVector());
     }
 }
