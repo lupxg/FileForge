@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/docs/" />
+  <Folder Name="/src/">
+    <Project Path="src/FileForge.Application/FileForge.Application.csproj" />
+    <Project Path="src/FileForge.Domain/FileForge.Domain.csproj" />
+    <Project Path="src/FileForge.Infrastructure/FileForge.Infrastructure.csproj" />
+    <Project Path="src/FileForge.Web/FileForge.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FileForge.UnitTests/FileForge.UnitTests.csproj" />
+  </Folder>
+</Solution>
