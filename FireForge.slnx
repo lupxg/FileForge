@@ -7,6 +7,7 @@
     <Project Path="src/FileForge.Web/FileForge.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/FileForge.IntegrationTests/FileForge.IntegrationTests.csproj" Id="06048d8e-ecdf-4b95-aaba-0042e9399b61" />
     <Project Path="tests/FileForge.UnitTests/FileForge.UnitTests.csproj" />
   </Folder>
 </Solution>
