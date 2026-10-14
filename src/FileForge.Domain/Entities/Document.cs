@@ -48,4 +48,38 @@ public class Document
         FailureReason = reason;
         ProcessedAtUtc = DateTime.UtcNow;
     }
+
+
+    public static Document Create(
+    string fileName,
+    string contentType,
+    long sizeInBytes,
+    string storagePath)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            throw new DomainException("File name is required.");
+
+        if (string.IsNullOrWhiteSpace(contentType))
+            throw new DomainException("Content type is required.");
+
+        if (sizeInBytes <= 0)
+            throw new DomainException("File size must be greater than zero.");
+
+        if (string.IsNullOrWhiteSpace(storagePath))
+            throw new DomainException("Storage path is required.");
+
+        return new Document
+        {
+            Id = Guid.NewGuid(),
+            FileName = fileName,
+            ContentType = contentType,
+            SizeInBytes = sizeInBytes,
+            StoragePath = storagePath,
+            ChunkCount = 0,
+            Status = DocumentStatus.Uploaded,
+            FailureReason = null,
+            CreatedAtUtc = DateTime.UtcNow,
+            ProcessedAtUtc = null
+        };
+    }
 }

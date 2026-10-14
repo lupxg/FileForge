@@ -6,7 +6,6 @@ using Xunit;
 
 namespace FileForge.IntegrationTests.FileForge.InfrastructureTests;
 
-[TestClass]
 public sealed class PersistenceIntegrationTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
     [Fact]

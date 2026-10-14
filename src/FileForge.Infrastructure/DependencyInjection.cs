@@ -1,4 +1,5 @@
-﻿using FileForge.Application.Interfaces;
+﻿using FileForge.Application.Abstractions;
+using FileForge.Application.Interfaces;
 using FileForge.Infrastructure.Persistence;
 using FileForge.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +19,7 @@ public static class DependencyInjection
 
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IChunkRepository, ChunkRepository>();
-
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddDbContext<FileForgeDbContext>(options => ConfigureDatabase(options, connectionString));
 
 

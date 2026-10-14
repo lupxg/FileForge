@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FileForge.Application\FileForge.Application.csproj" />
     <ProjectReference Include="..\FileForge.Domain\FileForge.Domain.csproj" />
   </ItemGroup>
 

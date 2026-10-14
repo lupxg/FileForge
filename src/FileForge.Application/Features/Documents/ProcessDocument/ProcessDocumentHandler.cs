@@ -2,7 +2,6 @@
 using FileForge.Application.Exceptions;
 using FileForge.Application.Interfaces;
 using FileForge.Domain.Entities;
-using FileForge.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.Logging;
 using System.Data;
 
@@ -92,26 +91,43 @@ public class ProcessDocumentHandler
                     embeddings[index]))
                 .ToList();
 
-            await using var transaction =
-                await _uow.BeginTransactionAsync(ct);
+            await using var transaction = await _uow.BeginTransactionAsync(ct);
 
-            await _chunks.DeleteByDocumentIdAsync(doc.Id, ct);
-            await _chunks.AddRangeAsync(newChunks, ct);
+            try
+            {
+                await _chunks.DeleteByDocumentIdAsync(doc.Id, ct);
+                await _chunks.AddRangeAsync(newChunks, ct);
 
-            doc.MarkReady(newChunks.Count);
+                doc.MarkReady(newChunks.Count);
 
-            await _uow.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
+                await _uow.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
 
-            _logger.LogInformation(
-                "Document {DocumentId} processed with {ChunkCount} chunks.",
-                doc.Id,
-                newChunks.Count);
+                _logger.LogInformation("Document {DocumentId} processed with {ChunkCount} chunks.",
+                    doc.Id,
+                    newChunks.Count);
+
+            }
+            catch
+            {
+                try
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                }
+                catch (Exception rollbackException)
+                {
+                    _logger.LogError(
+                        rollbackException,
+                        "Rollback failed for document {DocumentId}.",
+                        doc.Id);
+                }
+
+                throw;
+            }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            _logger.LogInformation(
-                "Processing canceled for document {DocumentId}.",
+            _logger.LogInformation("Processing canceled for document {DocumentId}.",
                 documentId);
 
             // Cancellation must not be reported as a processing failure.
@@ -126,11 +142,15 @@ public class ProcessDocumentHandler
                 "Processing failed for document {DocumentId}.",
                 documentId);
 
-            // In a production implementation, persist this failure through
-            // a fresh scope if the transaction or DbContext has failed.
-            doc.MarkFailed("Document processing failed.");
+            _uow.ClearTracking();
 
-            await _uow.SaveChangesAsync(ct);
+            var failedDocument = await _documents.GetAsync(doc.Id, ct);
+
+            if (failedDocument is not null)
+            {
+                failedDocument.MarkFailed("Document processing failed.");
+                await _uow.SaveChangesAsync(ct);
+            }
 
             throw;
         }

@@ -8,12 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Abp" Version="10.5.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FileForge.Domain\FileForge.Domain.csproj" />
-    <ProjectReference Include="..\FileForge.Infrastructure\FileForge.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

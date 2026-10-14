@@ -1,4 +1,5 @@
-﻿using FileForge.Domain.Entities;
+﻿using FileForge.Application.Interfaces;
+using FileForge.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,6 @@ public sealed class DocumentRepository : IDocumentRepository
         CancellationToken ct)
     {
         return await _dbContext.Documents
-            .AsNoTracking()
             .FirstOrDefaultAsync(
                 document => document.Id == documentId,
                 ct);

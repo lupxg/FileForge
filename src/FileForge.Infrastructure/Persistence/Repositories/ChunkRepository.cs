@@ -24,8 +24,9 @@ public class ChunkRepository : IChunkRepository
         if (chunkList.Count == 0)
             return;
 
-        await _dbContext.DocumentChunks.AddRangeAsync(
-            chunkList, ct);
+        await _dbContext.DocumentChunks.AddRangeAsync(chunkList, ct);
+
+        await _dbContext.SaveChangesAsync(ct);
     }
 
     public async Task<IReadOnlyList<ScoredChunk>> SearchAsync(

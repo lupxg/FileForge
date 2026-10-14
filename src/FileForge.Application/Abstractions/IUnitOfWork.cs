@@ -1,8 +1,8 @@
-﻿
-namespace FileForge.Application.Abstractions;
+﻿namespace FileForge.Application.Abstractions;
 
 public interface IUnitOfWork
 {
-    Task SaveChangesAsync(CancellationToken ct);
-    Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken ct);
+    Task SaveChangesAsync(CancellationToken ct = default);
+    Task<IUnitOfWorkTransaction> BeginTransactionAsync(CancellationToken ct = default);
+    void ClearTracking();
 }
