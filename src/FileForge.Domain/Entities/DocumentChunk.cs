@@ -10,7 +10,7 @@ public class DocumentChunk
     public ReadOnlyMemory<float> Embedding { get; private set; }
 
     // Needed by EF.
-    private DocumentChunk() { }
+    public DocumentChunk() { }
 
     public static DocumentChunk Create(Guid documentId, int index, string content,
                                        int tokenCount, ReadOnlyMemory<float> embedding)

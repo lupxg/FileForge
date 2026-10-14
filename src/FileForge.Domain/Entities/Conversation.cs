@@ -1,7 +1,8 @@
 ﻿namespace FileForge.Domain.Entities;
 
-public class Converstaion
+public class Conversation
 {
+    public Guid Id { get; set; }
     private readonly List<Guid> _documentIds = new();
     public IReadOnlyCollection<Guid> DocumentIds => _documentIds;
 
