@@ -6,5 +6,7 @@
     <Project Path="src/FileForge.Infrastructure/FileForge.Infrastructure.csproj" />
     <Project Path="src/FileForge.Web/FileForge.Web.csproj" />
   </Folder>
-  <Folder Name="/tests/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/FileForge.IntegrationTests/FileForge.IntegrationTests.csproj" />
+  </Folder>
 </Solution>
