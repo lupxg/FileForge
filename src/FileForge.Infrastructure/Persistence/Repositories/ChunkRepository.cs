@@ -74,6 +74,47 @@ public class ChunkRepository : IChunkRepository
             .ToList();
     }
 
+
+    public async Task<IReadOnlyList<ScoredChunk>> SearchAllAsync(
+        ReadOnlyMemory<float> queryEmbedding,
+        int topK,
+        CancellationToken ct = default)
+    {
+        if (topK <= 0)
+            throw new ArgumentOutOfRangeException(nameof(topK));
+
+        if (queryEmbedding.IsEmpty)
+            throw new ArgumentException(
+                "Query embedding cannot be empty.",
+                nameof(queryEmbedding));
+
+        // FileForge uses vector(1536) in PostgreSQL.
+        if (queryEmbedding.Length != 1536)
+            throw new ArgumentException(
+                "Query embedding must contain 1536 dimensions.",
+                nameof(queryEmbedding));
+
+        var vector = new Pgvector.Vector(queryEmbedding.ToArray());
+
+        var chunks = await _dbContext.DocumentChunks
+            .FromSqlInterpolated($"""
+            SELECT *
+            FROM document_chunks
+            ORDER BY embedding <=> {vector}
+            LIMIT {topK}
+            """)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return chunks
+            .Select(chunk => new ScoredChunk(
+                chunk,
+                CosineSimilarity(
+                    queryEmbedding.Span,
+                    chunk.Embedding.Span)))
+            .ToList();
+    }
+
     public async Task DeleteByDocumentIdAsync(
         Guid id,
         CancellationToken ct)

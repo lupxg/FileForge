@@ -8,5 +8,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FileForge.IntegrationTests/FileForge.IntegrationTests.csproj" />
+    <Project Path="tests/FireForge.UnitTests/FireForge.UnitTests.csproj" Id="b6754a1a-6c57-4c4d-bfb8-7db16fbb6543" />
   </Folder>
 </Solution>

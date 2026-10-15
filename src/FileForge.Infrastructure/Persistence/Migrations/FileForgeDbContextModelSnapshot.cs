@@ -106,7 +106,7 @@ namespace FileForge.Infrastructure.Persistence.Migrations
 
                     b.Property<Vector>("Embedding")
                         .IsRequired()
-                        .HasColumnType("vector")
+                        .HasColumnType("vector(1536)")
                         .HasColumnName("embedding");
 
                     b.Property<int>("Index")

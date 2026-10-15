@@ -2,13 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Pgvector;
-using System.Numerics;
 
 namespace FileForge.Infrastructure.Persistence.Configurations;
 
-public sealed class DocumentChunkConfiguration : IEntityTypeConfiguration<DocumentChunk>
+public sealed class DocumentChunkConfiguration
+    : IEntityTypeConfiguration<DocumentChunk>
 {
+    private const int EmbeddingDimensions = 1536;
+
     public void Configure(EntityTypeBuilder<DocumentChunk> builder)
     {
         builder.ToTable("document_chunks");
@@ -17,31 +18,6 @@ public sealed class DocumentChunkConfiguration : IEntityTypeConfiguration<Docume
 
         builder.Property(x => x.Id)
             .ValueGeneratedNever();
-
-        builder.Property(x => x.DocumentId)
-            .IsRequired();
-
-        builder.Property(x => x.Index)
-            .IsRequired();
-
-        builder.Property(x => x.Content)
-            .IsRequired();
-
-        builder.Property(x => x.TokenCount)
-            .IsRequired();
-
-        var converter =
-            new ValueConverter<ReadOnlyMemory<float>, Pgvector.Vector>(
-                embedding => new Pgvector.Vector(embedding.ToArray()),
-                vector => new ReadOnlyMemory<float>(vector.ToArray()));
-
-        builder.Property(x => x.Embedding)
-            .HasConversion(converter)
-            .HasColumnType("vector")
-            .IsRequired();
-
-        builder.HasIndex(x => new { x.DocumentId, x.Index })
-            .IsUnique();
 
         builder.Property(x => x.DocumentId)
             .HasColumnName("document_id")
@@ -59,10 +35,18 @@ public sealed class DocumentChunkConfiguration : IEntityTypeConfiguration<Docume
             .HasColumnName("token_count")
             .IsRequired();
 
+        var converter =
+            new ValueConverter<ReadOnlyMemory<float>, Pgvector.Vector>(
+                embedding => new Pgvector.Vector(embedding.ToArray()),
+                vector => new ReadOnlyMemory<float>(vector.ToArray()));
+
         builder.Property(x => x.Embedding)
             .HasColumnName("embedding")
             .HasConversion(converter)
-            .HasColumnType("vector")
+            .HasColumnType($"vector({EmbeddingDimensions})")
             .IsRequired();
+
+        builder.HasIndex(x => new { x.DocumentId, x.Index })
+            .IsUnique();
     }
 }

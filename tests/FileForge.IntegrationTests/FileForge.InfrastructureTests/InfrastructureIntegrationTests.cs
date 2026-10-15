@@ -12,6 +12,16 @@ namespace FileForge.IntegrationTests.FileForge.InfrastructureTests;
 
 public sealed class InfrastructureIntegrationTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
+    private static ReadOnlyMemory<float> CreateTestEmbedding(int activeIndex)
+    {
+        const int dimensions = 1536;
+
+        var vector = new float[dimensions];
+        vector[activeIndex] = 1f;
+
+        return new ReadOnlyMemory<float>(vector);
+    }
+
     [Fact]
     public void AddInfrastructure_ShouldRegisterRepositories()
     {
@@ -59,11 +69,11 @@ public sealed class InfrastructureIntegrationTests(PostgresFixture fixture) : IC
         {
             DocumentChunk.Create(
                 document.Id, 0, "First chunk", 2,
-                new ReadOnlyMemory<float>([1, 0, 0])),
+                CreateTestEmbedding(0)),
 
             DocumentChunk.Create(
                 document.Id, 1, "Second chunk", 2,
-                new ReadOnlyMemory<float>([0, 1, 0]))
+                CreateTestEmbedding(1))
         };
 
         // Act: track the chunks, then persist them.
@@ -115,8 +125,7 @@ public sealed class InfrastructureIntegrationTests(PostgresFixture fixture) : IC
                 0,
                 "Chunk to delete",
                 3,
-                new ReadOnlyMemory<float>(
-                    new float[] { 1f, 0f, 0f }))
+                CreateTestEmbedding(0))
         };
 
         using (var insertScope = fixture.CreateScope())
@@ -180,7 +189,7 @@ public sealed class InfrastructureIntegrationTests(PostgresFixture fixture) : IC
             0,
             "Original chunk",
             2,
-            new ReadOnlyMemory<float>(new float[] { 1f, 0f, 0f }));
+            CreateTestEmbedding(0));
 
         // Arrange: persist the document and its original chunk.
         using (var setupScope = fixture.CreateScope())

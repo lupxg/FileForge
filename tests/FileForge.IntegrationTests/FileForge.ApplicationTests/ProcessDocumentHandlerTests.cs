@@ -1,9 +1,11 @@
 ﻿using FileForge.Application.Abstractions;
 using FileForge.Application.Exceptions;
 using FileForge.Application.Features.Documents.ProcessDocument;
+using FileForge.Application.Features.Documents.Processing;
 using FileForge.Application.Interfaces;
 using FileForge.Domain.Entities;
 using FileForge.Domain.Enums;
+using FileForge.Infrastructure.FileProcessing;
 using FileForge.Infrastructure.Persistence;
 using FileForge.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
@@ -44,14 +46,15 @@ internal sealed class FakeEmbeddingService(
     IReadOnlyList<ReadOnlyMemory<float>> embeddings)
     : IEmbeddingService
 {
+    private const int Dimensions = 1536;
+
     public Task<ReadOnlyMemory<float>> EmbedAsync(
         string text,
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
-        return Task.FromResult(
-            new ReadOnlyMemory<float>([1f, 0f, 0f]));
+        return Task.FromResult(CreateTestVector());
     }
 
     public Task<IReadOnlyList<ReadOnlyMemory<float>>> EmbedBatchAsync(
@@ -60,12 +63,90 @@ internal sealed class FakeEmbeddingService(
     {
         ct.ThrowIfCancellationRequested();
 
+        var inputs = texts.ToList();
+
+        if (inputs.Count != embeddings.Count)
+        {
+            throw new InvalidOperationException(
+                $"Expected {inputs.Count} embeddings, " +
+                $"but received {embeddings.Count}.");
+        }
+
+        foreach (var embedding in embeddings)
+        {
+            if (embedding.Length != Dimensions)
+            {
+                throw new InvalidOperationException(
+                    $"Expected {Dimensions} dimensions, " +
+                    $"but received {embedding.Length}.");
+            }
+        }
+
         return Task.FromResult(embeddings);
+    }
+
+    private static ReadOnlyMemory<float> CreateTestVector()
+    {
+        var vector = new float[Dimensions];
+        vector[0] = 1f;
+
+        return new ReadOnlyMemory<float>(vector);
     }
 }
 
+
+internal sealed class TestEmbeddingService : IEmbeddingService
+{
+    private const int Dimensions = 1536;
+
+    public Task<ReadOnlyMemory<float>> EmbedAsync(
+        string text,
+        CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        return Task.FromResult(CreateTestVector());
+    }
+
+    public Task<IReadOnlyList<ReadOnlyMemory<float>>> EmbedBatchAsync(
+        IEnumerable<string> texts,
+        CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        IReadOnlyList<ReadOnlyMemory<float>> embeddings = texts
+            .Select(_ => CreateTestVector())
+            .ToList();
+
+        return Task.FromResult(embeddings);
+    }
+
+    private static ReadOnlyMemory<float> CreateTestVector()
+    {
+        var vector = new float[Dimensions];
+
+        // Deterministic test data, not a meaningful semantic embedding.
+        vector[0] = 1f;
+
+        return vector;
+    }
+}
+
+
+
+
 public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
+    private static ReadOnlyMemory<float> CreateTestEmbedding(int activeIndex)
+    {
+        const int dimensions = 1536;
+
+        var vector = new float[dimensions];
+        vector[activeIndex] = 1f;
+
+        return new ReadOnlyMemory<float>(vector);
+    }
+
     [Fact]
     public async Task HandleAsync_ShouldMarkDocumentReady_WhenProcessingSucceeds()
     {
@@ -103,8 +184,8 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
                 ]),
                 new FakeEmbeddingService(
                 [
-                    new ReadOnlyMemory<float>([1f, 0f, 0f]),
-                    new ReadOnlyMemory<float>([0f, 1f, 0f])
+                    CreateTestEmbedding(0),
+                    CreateTestEmbedding(1)
                 ]),
                 services.GetRequiredService<IChunkRepository>(),
                 services.GetRequiredService<IUnitOfWork>(),
@@ -210,7 +291,7 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
             0,
             "Original chunk",
             2,
-            new ReadOnlyMemory<float>([1f, 0f, 0f]));
+            CreateTestEmbedding(0));
 
         // Arrange: persist the document and original chunk.
         using (var setupScope = fixture.CreateScope())
@@ -243,7 +324,7 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
                 ]),
                 new FakeEmbeddingService(
                 [
-                    new ReadOnlyMemory<float>([0f, 1f, 0f])
+                    CreateTestEmbedding(0)
                 ]),
                 failingChunkRepository,
                 services.GetRequiredService<IUnitOfWork>(),
@@ -276,6 +357,7 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
     }
 
 
+
     [Fact]
     public async Task HandleAsync_ShouldPreserveExistingChunks_WhenEmbeddingCountDoesNotMatch()
     {
@@ -292,7 +374,7 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
             0,
             "Original chunk",
             2,
-            new ReadOnlyMemory<float>([1f, 0f, 0f]));
+            CreateTestEmbedding(0));
 
         // Arrange: persist the document and its original chunk.
         using (var setupScope = fixture.CreateScope())
@@ -321,7 +403,7 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
                 ]),
                 new FakeEmbeddingService(
                 [
-                    new ReadOnlyMemory<float>([0f, 1f, 0f])
+                    CreateTestEmbedding(0)
                 ]),
                 services.GetRequiredService<IChunkRepository>(),
                 services.GetRequiredService<IUnitOfWork>(),
@@ -331,11 +413,11 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
                 () => handler.HandleAsync(document.Id, ct));
 
             Assert.Equal(
-                "Expected 2 embeddings, received 1.",
+                "Expected 2 embeddings, but received 1.",
                 exception.Message);
         }
 
-        // Assert: inspect the persisted state using a fresh DbContext.
+        // Assert: inspect persisted state using a fresh DbContext.
         using var verificationScope = fixture.CreateScope();
 
         var verificationDb = verificationScope.ServiceProvider
@@ -390,5 +472,90 @@ public sealed class ProcessDocumentHandlerTests(PostgresFixture fixture) : IClas
 
         // Assert: processing never began.
         Assert.False(extractor.WasCalled);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldExtractAndChunkText_WhenProcessingSucceeds()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        var filePath = Path.Combine(
+            Path.GetTempPath(),
+            $"{Guid.NewGuid():N}.txt");
+
+        var text = string.Concat(
+            Enumerable.Repeat(
+                "FileForge extracts document text and splits it into chunks. ",
+                50));
+
+        try
+        {
+            await File.WriteAllTextAsync(filePath, text, ct);
+            var fileSize = new FileInfo(filePath).Length;
+
+            var document = Document.Create(
+                "integration-test.txt",
+                "text/plain",
+                fileSize,
+                filePath);
+
+            // Persist the document before processing.
+            using (var setupScope = fixture.CreateScope())
+            {
+                var services = setupScope.ServiceProvider;
+
+                await services
+                    .GetRequiredService<IDocumentRepository>()
+                    .AddAsync(document, ct);
+
+                await services
+                    .GetRequiredService<IUnitOfWork>()
+                    .SaveChangesAsync(ct);
+            }
+
+            using (var processingScope = fixture.CreateScope())
+            {
+                var services = processingScope.ServiceProvider;
+
+                var handler = new ProcessDocumentHandler(
+                    services.GetRequiredService<IDocumentRepository>(),
+                    new PlainTextDocumentExtractor(),
+                    new FixedSizeTextChunker(),
+                    new TestEmbeddingService(),
+                    services.GetRequiredService<IChunkRepository>(),
+                    services.GetRequiredService<IUnitOfWork>(),
+                    NullLogger<ProcessDocumentHandler>.Instance);
+
+                await handler.HandleAsync(document.Id, ct);
+            }
+
+            using var assertionScope = fixture.CreateScope();
+            var db = assertionScope.ServiceProvider
+                .GetRequiredService<FileForgeDbContext>();
+
+            var savedDocument = await db.Documents
+                .AsNoTracking()
+                .SingleAsync(d => d.Id == document.Id, ct);
+
+            var savedChunks = await db.DocumentChunks
+                .AsNoTracking()
+                .Where(c => c.DocumentId == document.Id)
+                .OrderBy(c => c.Index)
+                .ToListAsync(ct);
+
+            Assert.Equal(DocumentStatus.Ready, savedDocument.Status);
+            Assert.True(savedChunks.Count > 1);
+            Assert.Equal(savedChunks.Count, savedDocument.ChunkCount);
+            Assert.All(
+                savedChunks,
+                chunk => Assert.False(string.IsNullOrWhiteSpace(chunk.Content)));
+        }
+        finally
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
     }
 }

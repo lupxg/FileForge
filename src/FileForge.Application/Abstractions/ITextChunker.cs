@@ -1,5 +1,4 @@
-﻿
-namespace FileForge.Application.Interfaces;
+﻿namespace FileForge.Application.Abstractions;
 
 public record TextChunk(string Content, int TokenCount);
 

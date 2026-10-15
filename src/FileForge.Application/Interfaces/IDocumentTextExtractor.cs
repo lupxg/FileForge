@@ -6,5 +6,5 @@ namespace FileForge.Application.Interfaces;
 
 public interface IDocumentTextExtractor
 {
-    Task<string> ExtractAsync(string storagePath, string contentType, CancellationToken ct);
+    Task<string> ExtractAsync(string storagePath, string contentType, CancellationToken ct = default);
 }
