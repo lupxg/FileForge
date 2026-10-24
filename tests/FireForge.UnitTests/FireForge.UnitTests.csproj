@@ -15,6 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\FileForge.Application\FileForge.Application.csproj" />
+    <ProjectReference Include="..\..\src\FileForge.Infrastructure\FileForge.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

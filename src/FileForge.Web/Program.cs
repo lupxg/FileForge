@@ -1,11 +1,21 @@
+using FileForge.Application;
+using FileForge.Application.Interfaces;
+using FileForge.Infrastructure;
+using FileForge.Infrastructure.Embeddings;
+using FileForge.Web.Endpoints;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddApplication(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddOpenAIEmbeddings(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline. 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -20,7 +30,8 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapStaticAssets();
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapRazorPages().WithStaticAssets();
+
+app.MapDocumentEndpoints();
 
 app.Run();
