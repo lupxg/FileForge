@@ -1,10 +1,7 @@
-\# FileForge
+## FileForge
 
+AI powered docuement analyzer.
 
-
-AI document analyzer.
-
-
-
-
-
+## Tech stack
+ASP.NET core 10.0.0
+PostgreSQL
